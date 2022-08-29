@@ -3,7 +3,6 @@ package kz.halyk.service;
 import kz.halyk.App;
 import kz.halyk.model.OutputRecord;
 import kz.halyk.model.TrimRecord;
-import kz.halyk.utils.CSVUtil;
 import kz.halyk.utils.ProfileTimer;
 import kz.halyk.utils.enums.BTColumns;
 import lombok.extern.slf4j.Slf4j;
@@ -22,13 +21,12 @@ import static kz.halyk.utils.CSVUtil.refactorFilePath;
 
 @Slf4j
 public class ComputingService {
-    private final List<OutputRecord> recordList = new ArrayList<>(10000);
-
     ProfileTimer timer = new ProfileTimer("Computer Service");
 
     public void fastCompute(String filePath) throws IOException, ParseException {
         timer.start();
 
+        DocumentService documentService = new DocumentService(App.outputPath);
         Reader in = new FileReader(refactorFilePath(filePath));
         Iterator<CSVRecord> records = CSVFormat.EXCEL.parse(in).iterator();
 
@@ -36,7 +34,7 @@ public class ComputingService {
         Date currentDate = null;
 
         while (records.hasNext()) {
-            var record = records.next();
+            CSVRecord record = records.next();
             if (record.get(BTColumns.DATE.getIndex()).equals(BTColumns.DATE.getName())) continue;
 
             if (Double.parseDouble(cleanAmount(record.get(BTColumns.WITHDRAWALS.getIndex()))) == 0.0) continue;
@@ -51,8 +49,8 @@ public class ComputingService {
             } else {
                 if (currentDate != null) {
                     try {
-                        recordList.addAll(fastFindWithdrawlsByDescription(dayRecords));
-                        recordList.add(fastFindWithdrawlsData(dayRecords));
+                        documentService.write(Collections.singletonList(fastFindWithdrawlsData(dayRecords)));
+                        documentService.write(fastFindWithdrawlsByDescription(dayRecords));
                     } catch (NullPointerException ignore) {
                     }
                 }
@@ -62,10 +60,6 @@ public class ComputingService {
             }
         }
         timer.stop();
-        timer.start();
-        CSVUtil.writeRecords(recordList);
-        timer.stop();
-
         timer.getResults();
     }
 
