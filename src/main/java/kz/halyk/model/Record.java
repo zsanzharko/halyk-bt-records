@@ -8,7 +8,7 @@ import java.util.Date;
 
 @Data
 @AllArgsConstructor
-public class TrimRecord {
+public class Record {
     private Date date;
     private String description;
     private BigDecimal withdrawal;

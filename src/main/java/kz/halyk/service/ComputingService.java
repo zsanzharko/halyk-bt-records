@@ -2,9 +2,10 @@ package kz.halyk.service;
 
 import kz.halyk.App;
 import kz.halyk.model.OutputRecord;
-import kz.halyk.model.TrimRecord;
+import kz.halyk.model.Record;
 import kz.halyk.utils.ProfileTimer;
 import kz.halyk.utils.enums.BTColumns;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -20,77 +21,61 @@ import static kz.halyk.utils.CSVUtil.cleanAmount;
 import static kz.halyk.utils.CSVUtil.refactorFilePath;
 
 @Slf4j
-public class ComputingService {
+public final class ComputingService {
     ProfileTimer timer = new ProfileTimer("Computer Service");
 
     public void fastCompute(String filePath) throws IOException, ParseException {
+        log.info("Data processing started...");
         timer.start();
 
         DocumentService documentService = new DocumentService(App.outputPath);
         Reader in = new FileReader(refactorFilePath(filePath));
         Iterator<CSVRecord> records = CSVFormat.EXCEL.parse(in).iterator();
 
-        final List<TrimRecord> dayRecords = new ArrayList<>();
+        final List<Record> dayRecords = new ArrayList<>();
         Date currentDate = null;
 
         while (records.hasNext()) {
-            CSVRecord record = records.next();
-            if (record.get(BTColumns.DATE.getIndex()).equals(BTColumns.DATE.getName())) continue;
+            CSVRecord csvRecord = records.next();
+            if (csvRecord.get(BTColumns.DATE.getIndex()).equals(BTColumns.DATE.getName())) continue;
+            if (Double.parseDouble(cleanAmount(csvRecord.get(BTColumns.WITHDRAWALS.getIndex()))) == 0.0) continue;
 
-            if (Double.parseDouble(cleanAmount(record.get(BTColumns.WITHDRAWALS.getIndex()))) == 0.0) continue;
+            Record record = new Record(
+                    App.dateFormat.parse(csvRecord.get(BTColumns.DATE.getIndex())),
+                    csvRecord.get(BTColumns.DESCRIPTION.getIndex()),
+                    new BigDecimal(cleanAmount(csvRecord.get(BTColumns.WITHDRAWALS.getIndex()))));
 
-            var model = new TrimRecord(
-                    App.dateFormat.parse(record.get(BTColumns.DATE.getIndex())),
-                    record.get(BTColumns.DESCRIPTION.getIndex()),
-                    new BigDecimal(cleanAmount(record.get(BTColumns.WITHDRAWALS.getIndex()))));
-
-            if (currentDate != null && currentDate.equals(model.getDate())) {
-                dayRecords.add(model);
+            if (currentDate != null && currentDate.equals(record.getDate())) {
+                dayRecords.add(record);
             } else {
-                if (currentDate != null) {
-                    try {
-                        documentService.write(Collections.singletonList(fastFindWithdrawlsData(dayRecords)));
-                        documentService.write(fastFindWithdrawlsByDescription(dayRecords));
-                    } catch (NullPointerException ignore) {
-                    }
+                if (currentDate != null || !dayRecords.isEmpty()) {
+                    documentService.write(fastFindWithdrawlsData(dayRecords));
+                    documentService.write(fastFindWithdrawlsByDescription(dayRecords));
                 }
-                currentDate = model.getDate();
+                currentDate = record.getDate();
                 dayRecords.clear();
-                dayRecords.add(model);
+                dayRecords.add(record);
             }
         }
+        log.info("Data processing is finished...");
         timer.stop();
         timer.getResults();
     }
 
-    private static OutputRecord fastFindWithdrawlsData(final List<TrimRecord> dayRecords) {
-        if (dayRecords == null || dayRecords.isEmpty()) return null;
-
-        BigDecimal min = dayRecords.stream()
-                .map(TrimRecord::getWithdrawal)
-                .min(Comparator.naturalOrder())
-                .orElse(BigDecimal.ZERO);
-
-        BigDecimal average = BigDecimal.valueOf(dayRecords.stream()
-                .map(TrimRecord::getWithdrawal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .doubleValue() / dayRecords.size());
-
-        BigDecimal max = dayRecords.stream()
-                .map(TrimRecord::getWithdrawal)
-                .max(Comparator.naturalOrder())
-                .orElse(BigDecimal.ZERO);
-
-        return new OutputRecord(dayRecords.get(0).getDate(), "", min, max, average);
+    private OutputRecord fastFindWithdrawlsData(@NonNull final List<Record> dayRecords) {
+        if (dayRecords.isEmpty()) return null;
+        return new OutputRecord(dayRecords.get(0).getDate(), "",
+                findMin(dayRecords),
+                findMax(dayRecords),
+                findAvg(dayRecords));
     }
 
-    private List<OutputRecord> fastFindWithdrawlsByDescription(final List<TrimRecord> dayRecords) {
+    private List<OutputRecord> fastFindWithdrawlsByDescription(final List<Record> dayRecords) {
         if (dayRecords == null || dayRecords.isEmpty()) return new ArrayList<>();
         List<OutputRecord> outputRecords = new ArrayList<>();
         dayRecords.forEach(record -> {
-            String description = record.getDescription();
-            var records = dayRecords.stream()
-                    .filter(record1 -> record1.getDescription().equals(description))
+            List<Record> records = dayRecords.stream()
+                    .filter(r -> r.getDescription().equals(record.getDescription()))
                     .toList();
 
             outputRecords.add(new OutputRecord(
@@ -103,23 +88,23 @@ public class ComputingService {
         return outputRecords;
     }
 
-    private BigDecimal findMin(List<TrimRecord> records) {
-        return  records.stream()
-                .map(TrimRecord::getWithdrawal)
+    private static BigDecimal findMin(List<Record> records) {
+        return records.stream()
+                .map(Record::getWithdrawal)
                 .min(Comparator.naturalOrder())
                 .orElse(BigDecimal.ZERO);
     }
 
-    private BigDecimal findAvg(List<TrimRecord> records) {
+    private static BigDecimal findAvg(List<Record> records) {
         return BigDecimal.valueOf(records.stream()
-                .map(TrimRecord::getWithdrawal)
+                .map(Record::getWithdrawal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .doubleValue() / records.size());
     }
 
-    private BigDecimal findMax(List<TrimRecord> records) {
+    private static BigDecimal findMax(List<Record> records) {
         return records.stream()
-                .map(TrimRecord::getWithdrawal)
+                .map(Record::getWithdrawal)
                 .max(Comparator.naturalOrder())
                 .orElse(BigDecimal.ZERO);
     }

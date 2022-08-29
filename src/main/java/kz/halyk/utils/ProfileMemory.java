@@ -53,6 +53,9 @@ public class ProfileMemory implements Runnable {
             return;
         }
         log.info("Information about JVM Memory");
+        Long maxMemory= memoryStatPerSec.stream().mapToLong(v -> v).max().orElse(-1);
+        Long medianMemory = memoryStatPerSec.stream().reduce(0L , Long::sum) / memoryStatPerSec.size();
+        log.info(String.format("Max: %s MB\tMedian: %s MB", maxMemory, medianMemory));
         generateStatisticInConsole();
     }
 

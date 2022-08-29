@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.List;
 
 @Slf4j
-public class DocumentService {
+public final class DocumentService {
     BufferedWriter writer;
     List<String> columns = List.of("Date", "Type", "Min", "Max", "Avg");
 
@@ -29,7 +29,7 @@ public class DocumentService {
     }
 
     public void write(List<OutputRecord> recordList) {
-        recordList.forEach(outputRecord -> {
+        Runnable runnable = () -> recordList.forEach(outputRecord -> {
             try {
                 writer.write(convertToCSV(outputRecord).toCharArray());
                 writer.newLine();
@@ -37,6 +37,19 @@ public class DocumentService {
                 throw new RuntimeException(e);
             }
         });
+        new Thread(runnable);
+    }
+
+    public void write(OutputRecord record) {
+        Runnable runnable = () -> {
+            try {
+                writer.write(convertToCSV(record).toCharArray());
+                writer.newLine();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        new Thread(runnable);
     }
 
     private String convertToCSV(OutputRecord data) {
