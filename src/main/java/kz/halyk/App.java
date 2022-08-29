@@ -27,9 +27,13 @@ public class App {
 
         ProfileMemory profileMemory = new ProfileMemory("Profile Memory");
 
+        profileMemory.enable();
+
         new ComputingService().fastCompute(path);
 
         profileMemory.disable();
+
+        profileMemory.getStatistic();
 
     }
 }
