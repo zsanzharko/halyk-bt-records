@@ -23,7 +23,7 @@ public class ProfileMemory implements Runnable {
 
     @Override
     public void run() {
-        log.info(String.format("%s started... \n", Thread.currentThread().getName()));
+        log.info(String.format("%s started...", Thread.currentThread().getName()));
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(() -> {
@@ -31,7 +31,7 @@ public class ProfileMemory implements Runnable {
                 profileMemory();
             } else {
                 executor.shutdown();
-                log.info(String.format("%s is disabled... \n", Thread.currentThread().getName()));
+                log.info(String.format("%s is disabled...", Thread.currentThread().getName()));
             }
         }, 0, 1, SECONDS);
     }

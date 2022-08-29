@@ -4,6 +4,7 @@ import kz.halyk.App;
 import kz.halyk.model.OutputRecord;
 import kz.halyk.model.TrimRecord;
 import kz.halyk.utils.CSVUtil;
+import kz.halyk.utils.ProfileTimer;
 import kz.halyk.utils.enums.BTColumns;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -23,8 +24,10 @@ import static kz.halyk.utils.CSVUtil.refactorFilePath;
 public class ComputingService {
     private final List<OutputRecord> recordList = new ArrayList<>(10000);
 
+    ProfileTimer timer = new ProfileTimer("Computer Service");
+
     public void fastCompute(String filePath) throws IOException, ParseException {
-        final long startTime = System.currentTimeMillis();
+        timer.start();
 
         Reader in = new FileReader(refactorFilePath(filePath));
         Iterator<CSVRecord> records = CSVFormat.EXCEL.parse(in).iterator();
@@ -58,11 +61,12 @@ public class ComputingService {
                 dayRecords.add(model);
             }
         }
-        final long end1Point = System.currentTimeMillis();
-        log.info(String.format("First Point: %s\n", end1Point - startTime));
+        timer.stop();
+        timer.start();
         CSVUtil.writeRecords(recordList);
-        final long end2Point = System.currentTimeMillis();
-        log.info(String.format("Second Point: %s\n", end2Point - startTime));
+        timer.stop();
+
+        timer.getResults();
     }
 
     private static OutputRecord fastFindWithdrawlsData(final List<TrimRecord> dayRecords) {
