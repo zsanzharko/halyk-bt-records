@@ -1,10 +1,10 @@
 package kz.halyk;
 
 import kz.halyk.service.ComputingService;
+import kz.halyk.utils.ProfileMemory;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
@@ -25,16 +25,11 @@ public class App {
 
         final String path = args[0];
 
-        profileMemory();
+        ProfileMemory profileMemory = new ProfileMemory("Profile Memory");
 
-        ComputingService.fastCompute(path);
+        new ComputingService().fastCompute(path);
 
-        profileMemory();
-    }
+        profileMemory.disable();
 
-    private static void profileMemory() {
-        Runtime runtime = Runtime.getRuntime();
-        final long usedMem = runtime.totalMemory() - runtime.freeMemory();
-        System.out.printf("Used memory JVM: %s MB\n", usedMem / 1024);
     }
 }

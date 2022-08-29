@@ -24,11 +24,6 @@ public class OutputRecord {
         this.average = average;
     }
 
-    public OutputRecord(BigDecimal min, BigDecimal max, BigDecimal average) {
-        this.min = min;
-        this.max = max;
-        this.average = average;
-    }
     public void setType(String type) {
         if (type.isEmpty()) {
             this.type = type;
@@ -41,7 +36,7 @@ public class OutputRecord {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof OutputRecord that)) return false;
-        return getDate().getTime() == that.getDate().getTime() && getType().equals(that.getType());
+        return getDate().getTime() == that.getDate().getTime();
     }
 
     @Override
