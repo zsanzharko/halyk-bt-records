@@ -17,7 +17,7 @@ public class App {
     public final static String datePattern = "dd-MMM-yyyy";
     public static SimpleDateFormat dateFormat = new SimpleDateFormat(App.datePattern);
 
-    public static String outputPath = "./output.csv";
+    public static String outputPath = "./src/main/resources/csv_data/output.csv";
 
     public static void main(String[] args) throws IOException, ParseException {
         if (args.length == 0)

@@ -70,7 +70,7 @@ public class ProfileMemory implements Runnable {
             verticalResult
                     .append(String.valueOf(memoryLengthShowConsole == 0 ? '<' : '>').repeat(memoryLengthShowConsole == 0 ? 1 : memoryLengthShowConsole))
                     .append(" ").append(memory)
-                    .append(" ".repeat((maxValue - memoryLengthShowConsole) + 1))
+                    .append(" ".repeat((maxValue - memoryLengthShowConsole)))
                     .append(counter.getAndIncrement()).append("sec").append("\n");
         });
         System.out.println(verticalResult);

@@ -7,18 +7,14 @@ import kz.halyk.utils.ProfileTimer;
 import kz.halyk.utils.enums.BTColumns;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.util.*;
 
 import static kz.halyk.utils.CSVUtil.cleanAmount;
-import static kz.halyk.utils.CSVUtil.refactorFilePath;
 
 @Slf4j
 public final class ComputingService {
@@ -28,17 +24,15 @@ public final class ComputingService {
         log.info("Data processing started...");
         timer.start();
 
-        DocumentService documentService = new DocumentService(App.outputPath);
-        Reader in = new FileReader(refactorFilePath(filePath));
-        Iterator<CSVRecord> records = CSVFormat.EXCEL.parse(in).iterator();
+        DocumentService documentService = new DocumentService(App.outputPath); // create service that working with getting and saving data to csv
+        Iterator<CSVRecord> records = documentService.getData(filePath).iterator();
 
-        final List<Record> dayRecords = new ArrayList<>();
-        Date currentDate = null;
+        final List<Record> dayRecords = new ArrayList<>(); // splitting into day
+        Date currentDate = null; // checking date to manipulate
 
         while (records.hasNext()) {
             CSVRecord csvRecord = records.next();
-            if (csvRecord.get(BTColumns.DATE.getIndex()).equals(BTColumns.DATE.getName())) continue;
-            if (Double.parseDouble(cleanAmount(csvRecord.get(BTColumns.WITHDRAWALS.getIndex()))) == 0.0) continue;
+            if (isCorrectRecord(csvRecord)) continue; // checking record is correct
 
             Record record = new Record(
                     App.dateFormat.parse(csvRecord.get(BTColumns.DATE.getIndex())),
@@ -60,6 +54,11 @@ public final class ComputingService {
         log.info("Data processing is finished...");
         timer.stop();
         timer.getResults();
+    }
+
+    private boolean isCorrectRecord(CSVRecord csvRecord) {
+        return  (Double.parseDouble(cleanAmount(csvRecord.get(BTColumns.WITHDRAWALS.getIndex()))) == 0.0) ||
+                (csvRecord.get(BTColumns.DATE.getIndex()).equals(BTColumns.DATE.getName()));
     }
 
     private OutputRecord fastFindWithdrawlsData(@NonNull final List<Record> dayRecords) {
