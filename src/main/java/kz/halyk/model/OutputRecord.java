@@ -36,7 +36,7 @@ public class OutputRecord {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof OutputRecord that)) return false;
-        return getDate().getTime() == that.getDate().getTime();
+        return Objects.equals(getType(), that.getType());
     }
 
     @Override

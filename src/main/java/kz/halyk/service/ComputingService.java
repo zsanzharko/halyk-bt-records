@@ -7,40 +7,38 @@ import kz.halyk.utils.ProfileTimer;
 import kz.halyk.utils.enums.BTColumns;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.util.*;
 
 import static kz.halyk.utils.CSVUtil.cleanAmount;
+import static kz.halyk.utils.CSVUtil.refactorFilePath;
 
 @Slf4j
 public final class ComputingService {
-    private final ProfileTimer timer = new ProfileTimer("Computer Service");
-    private final DocumentService documentService; // create service that working with getting and saving data to csv
-
-    public ComputingService(DocumentService documentService) {
-        this.documentService = documentService;
-    }
-
-    public ComputingService() {
-        this.documentService = new DocumentService(App.outputPath);
-    }
+    ProfileTimer timer = new ProfileTimer("Computer Service");
 
     public void fastCompute(String filePath) throws IOException, ParseException {
         log.info("Data processing started...");
         timer.start();
 
-        Iterator<CSVRecord> records = documentService.getData(filePath).iterator();
+        DocumentService documentService = new DocumentService(App.outputPath);
+        Reader in = new FileReader(refactorFilePath(filePath));
+        Iterator<CSVRecord> records = CSVFormat.EXCEL.parse(in).iterator();
 
-        final List<Record> dayRecords = new LinkedList<>(); // splitting into day
-        Date currentDate = null; // checking date to manipulate
+        final List<Record> dayRecords = new ArrayList<>();
+        Date currentDate = null;
 
         while (records.hasNext()) {
             CSVRecord csvRecord = records.next();
-            if (isCorrectRecord(csvRecord)) continue; // checking record is correct
+            if (csvRecord.get(BTColumns.DATE.getIndex()).equals(BTColumns.DATE.getName())) continue;
+            if (Double.parseDouble(cleanAmount(csvRecord.get(BTColumns.WITHDRAWALS.getIndex()))) == 0.0) continue;
 
             Record record = new Record(
                     App.dateFormat.parse(csvRecord.get(BTColumns.DATE.getIndex())),
@@ -51,8 +49,8 @@ public final class ComputingService {
                 dayRecords.add(record);
             } else {
                 if (currentDate != null || !dayRecords.isEmpty()) {
-                    documentService.write(findWithdrawlsPerDay(dayRecords, currentDate));
-                    documentService.write(findWithdrawlsByDescription(dayRecords));
+                    documentService.write(fastFindWithdrawlsData(dayRecords));
+                    documentService.write(fastFindWithdrawlsByDescription(dayRecords));
                 }
                 currentDate = record.getDate();
                 dayRecords.clear();
@@ -64,26 +62,16 @@ public final class ComputingService {
         timer.getResults();
     }
 
-    private boolean isCorrectRecord(CSVRecord csvRecord) {
-        return  (Double.parseDouble(cleanAmount(csvRecord.get(BTColumns.WITHDRAWALS.getIndex()))) == 0.0) ||
-                (csvRecord.get(BTColumns.DATE.getIndex()).equals(BTColumns.DATE.getName()));
-    }
-
-    /**
-     * @param dayRecords Records per date
-     * @return new
-     */
-    private OutputRecord findWithdrawlsPerDay(@NonNull final List<Record> dayRecords, Date date) {
+    private OutputRecord fastFindWithdrawlsData(@NonNull final List<Record> dayRecords) {
         if (dayRecords.isEmpty()) return null;
-        return new OutputRecord(date, "",
+        return new OutputRecord(dayRecords.get(0).getDate(), "",
                 findMin(dayRecords),
                 findMax(dayRecords),
                 findAvg(dayRecords));
     }
 
-    private Set<OutputRecord> findWithdrawlsByDescription(final List<Record> dayRecords) {
+    private Set<OutputRecord> fastFindWithdrawlsByDescription(final List<Record> dayRecords) {
         if (dayRecords == null || dayRecords.isEmpty()) return new HashSet<>();
-
         Set<OutputRecord> outputRecords = new HashSet<>();
         dayRecords.forEach(record -> {
             List<Record> records = dayRecords.stream()
@@ -91,8 +79,8 @@ public final class ComputingService {
                     .toList();
 
             outputRecords.add(new OutputRecord(
-                    record.getDate(),
-                    record.getDescription(),
+                    records.get(0).getDate(),
+                    records.get(0).getDescription(),
                     findMin(records),
                     findMax(records),
                     findAvg(records)));
