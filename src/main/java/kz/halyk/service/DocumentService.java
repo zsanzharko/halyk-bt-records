@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 public final class DocumentService {
@@ -28,8 +29,8 @@ public final class DocumentService {
         }
     }
 
-    public void write(List<OutputRecord> recordList) {
-        Runnable runnable = () -> recordList.forEach(outputRecord -> {
+    public void write(Set<OutputRecord> recordList) {
+        recordList.forEach(outputRecord -> {
             try {
                 writer.write(convertToCSV(outputRecord).toCharArray());
                 writer.newLine();
@@ -37,19 +38,15 @@ public final class DocumentService {
                 throw new RuntimeException(e);
             }
         });
-        new Thread(runnable);
     }
 
     public void write(OutputRecord record) {
-        Runnable runnable = () -> {
-            try {
-                writer.write(convertToCSV(record).toCharArray());
-                writer.newLine();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        };
-        new Thread(runnable);
+        try {
+            writer.write(convertToCSV(record).toCharArray());
+            writer.newLine();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String convertToCSV(OutputRecord data) {

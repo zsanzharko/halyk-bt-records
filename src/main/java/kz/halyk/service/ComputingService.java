@@ -70,9 +70,9 @@ public final class ComputingService {
                 findAvg(dayRecords));
     }
 
-    private List<OutputRecord> fastFindWithdrawlsByDescription(final List<Record> dayRecords) {
-        if (dayRecords == null || dayRecords.isEmpty()) return new ArrayList<>();
-        List<OutputRecord> outputRecords = new ArrayList<>();
+    private Set<OutputRecord> fastFindWithdrawlsByDescription(final List<Record> dayRecords) {
+        if (dayRecords == null || dayRecords.isEmpty()) return new HashSet<>();
+        Set<OutputRecord> outputRecords = new HashSet<>();
         dayRecords.forEach(record -> {
             List<Record> records = dayRecords.stream()
                     .filter(r -> r.getDescription().equals(record.getDescription()))
