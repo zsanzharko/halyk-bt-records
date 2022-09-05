@@ -57,6 +57,12 @@ public final class ComputingService {
                 dayRecords.add(record);
             }
         }
+
+        if (currentDate != null || !dayRecords.isEmpty()) {
+            documentService.write(fastFindWithdrawlsData(dayRecords));
+            documentService.write(fastFindWithdrawlsByDescription(dayRecords));
+            dayRecords.clear();
+        }
         log.info("Data processing is finished...");
         timer.stop();
         timer.getResults();
