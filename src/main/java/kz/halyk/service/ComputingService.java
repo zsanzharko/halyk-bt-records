@@ -18,16 +18,24 @@ import static kz.halyk.utils.CSVUtil.cleanAmount;
 
 @Slf4j
 public final class ComputingService {
-    ProfileTimer timer = new ProfileTimer("Computer Service");
+    private final ProfileTimer timer = new ProfileTimer("Computer Service");
+    private final DocumentService documentService; // create service that working with getting and saving data to csv
+
+    public ComputingService(DocumentService documentService) {
+        this.documentService = documentService;
+    }
+
+    public ComputingService() {
+        this.documentService = new DocumentService(App.outputPath);
+    }
 
     public void fastCompute(String filePath) throws IOException, ParseException {
         log.info("Data processing started...");
         timer.start();
 
-        DocumentService documentService = new DocumentService(App.outputPath); // create service that working with getting and saving data to csv
         Iterator<CSVRecord> records = documentService.getData(filePath).iterator();
 
-        final List<Record> dayRecords = new ArrayList<>(); // splitting into day
+        final List<Record> dayRecords = new LinkedList<>(); // splitting into day
         Date currentDate = null; // checking date to manipulate
 
         while (records.hasNext()) {
@@ -43,8 +51,8 @@ public final class ComputingService {
                 dayRecords.add(record);
             } else {
                 if (currentDate != null || !dayRecords.isEmpty()) {
-                    documentService.write(fastFindWithdrawlsData(dayRecords));
-                    documentService.write(fastFindWithdrawlsByDescription(dayRecords));
+                    documentService.write(findWithdrawlsPerDay(dayRecords, currentDate));
+                    documentService.write(findWithdrawlsByDescription(dayRecords));
                 }
                 currentDate = record.getDate();
                 dayRecords.clear();
@@ -61,25 +69,30 @@ public final class ComputingService {
                 (csvRecord.get(BTColumns.DATE.getIndex()).equals(BTColumns.DATE.getName()));
     }
 
-    private OutputRecord fastFindWithdrawlsData(@NonNull final List<Record> dayRecords) {
+    /**
+     * @param dayRecords Records per date
+     * @return new
+     */
+    private OutputRecord findWithdrawlsPerDay(@NonNull final List<Record> dayRecords, Date date) {
         if (dayRecords.isEmpty()) return null;
-        return new OutputRecord(dayRecords.get(0).getDate(), "",
+        return new OutputRecord(date, "",
                 findMin(dayRecords),
                 findMax(dayRecords),
                 findAvg(dayRecords));
     }
 
-    private List<OutputRecord> fastFindWithdrawlsByDescription(final List<Record> dayRecords) {
-        if (dayRecords == null || dayRecords.isEmpty()) return new ArrayList<>();
-        List<OutputRecord> outputRecords = new ArrayList<>();
+    private Set<OutputRecord> findWithdrawlsByDescription(final List<Record> dayRecords) {
+        if (dayRecords == null || dayRecords.isEmpty()) return new HashSet<>();
+
+        Set<OutputRecord> outputRecords = new HashSet<>();
         dayRecords.forEach(record -> {
             List<Record> records = dayRecords.stream()
                     .filter(r -> r.getDescription().equals(record.getDescription()))
                     .toList();
 
             outputRecords.add(new OutputRecord(
-                    records.get(0).getDate(),
-                    records.get(0).getDescription(),
+                    record.getDate(),
+                    record.getDescription(),
                     findMin(records),
                     findMax(records),
                     findAvg(records)));

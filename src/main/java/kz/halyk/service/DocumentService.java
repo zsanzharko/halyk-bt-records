@@ -9,6 +9,7 @@ import org.apache.commons.csv.CSVParser;
 
 import java.io.*;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 public final class DocumentService {
@@ -33,10 +34,12 @@ public final class DocumentService {
     }
 
     public CSVParser getData(String filePath) throws IOException {
-        return csvFormat.parse(new BufferedReader(new FileReader(refactorFilePath(filePath))));
+        return csvFormat.parse(
+                new BufferedReader(
+                new FileReader((filePath.charAt(0) != '.') ? refactorFilePath(filePath) : filePath)));
     }
 
-    public void write(List<OutputRecord> recordList) {
+    public void write(Set<OutputRecord> recordList) {
         recordList.forEach(outputRecord -> {
             try {
                 writer.write(convertToCSV(outputRecord).toCharArray());
@@ -49,7 +52,8 @@ public final class DocumentService {
 
     public void write(OutputRecord record) {
         try {
-            writer.write(convertToCSV(record).toCharArray());
+            String c = convertToCSV(record);
+            writer.write(c.toCharArray());
             writer.newLine();
         } catch (IOException e) {
             throw new RuntimeException(e);
