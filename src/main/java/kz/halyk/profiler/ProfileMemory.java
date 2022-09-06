@@ -1,4 +1,4 @@
-package kz.halyk.utils;
+package kz.halyk.profiler;
 
 import lombok.extern.slf4j.Slf4j;
 

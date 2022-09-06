@@ -3,7 +3,7 @@ package kz.halyk.service;
 import kz.halyk.App;
 import kz.halyk.model.OutputRecord;
 import kz.halyk.model.Record;
-import kz.halyk.utils.ProfileTimer;
+import kz.halyk.profiler.ProfileTimer;
 import kz.halyk.utils.enums.BTColumns;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
