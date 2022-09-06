@@ -1,13 +1,13 @@
 package kz.halyk.service;
 
+import kz.halyk.App;
 import kz.halyk.model.OutputRecord;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.Set;
 
@@ -15,6 +15,12 @@ import java.util.Set;
 public final class DocumentService {
     BufferedWriter writer;
     List<String> columns = List.of("Date", "Type", "Min", "Max", "Avg");
+
+    private final CSVFormat csvFormat = CSVFormat.Builder.create()
+            .setDelimiter(',')
+            .setHeader()
+            .setSkipHeaderRecord(true)
+            .build();
 
     public DocumentService(@NonNull String outputPath) {
         if (outputPath.charAt(0) != '.')
@@ -49,8 +55,12 @@ public final class DocumentService {
         }
     }
 
+    public CSVParser getData(String filePath) throws IOException {
+        return csvFormat.parse(new FileReader(refactorFilePath(filePath)));
+    }
+
     private String convertToCSV(OutputRecord data) {
-        return String.valueOf(data.getDate()) + ',' +
+        return App.dateFormat.format(data.getDate()) + ',' +
                 data.getType() + ',' +
                 data.getMin() + ',' +
                 data.getMax() + ',' +
