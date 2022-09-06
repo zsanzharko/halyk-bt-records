@@ -3,22 +3,18 @@ package kz.halyk.service;
 import kz.halyk.App;
 import kz.halyk.model.OutputRecord;
 import kz.halyk.model.Record;
-import kz.halyk.utils.ProfileTimer;
+import kz.halyk.profiler.ProfileTimer;
 import kz.halyk.utils.enums.BTColumns;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.util.*;
 
 import static kz.halyk.utils.CSVUtil.cleanAmount;
-import static kz.halyk.utils.CSVUtil.refactorFilePath;
 
 @Slf4j
 public final class ComputingService {
@@ -29,16 +25,16 @@ public final class ComputingService {
         timer.start();
 
         DocumentService documentService = new DocumentService(App.outputPath);
-        Reader in = new FileReader(refactorFilePath(filePath));
-        Iterator<CSVRecord> records = CSVFormat.EXCEL.parse(in).iterator();
+
+        Iterator<CSVRecord> records = documentService.getData(filePath).iterator();
 
         final List<Record> dayRecords = new ArrayList<>();
         Date currentDate = null;
 
         while (records.hasNext()) {
             CSVRecord csvRecord = records.next();
-            if (csvRecord.get(BTColumns.DATE.getIndex()).equals(BTColumns.DATE.getName())) continue;
-            if (Double.parseDouble(cleanAmount(csvRecord.get(BTColumns.WITHDRAWALS.getIndex()))) == 0.0) continue;
+            if (validationWithdrawls(
+                    Double.parseDouble(cleanAmount(csvRecord.get(BTColumns.WITHDRAWALS.getIndex()))))) continue;
 
             Record record = new Record(
                     App.dateFormat.parse(csvRecord.get(BTColumns.DATE.getIndex())),
@@ -56,6 +52,12 @@ public final class ComputingService {
                 dayRecords.clear();
                 dayRecords.add(record);
             }
+
+        }
+        if (!dayRecords.isEmpty()) {
+            documentService.write(fastFindWithdrawlsData(dayRecords));
+            documentService.write(fastFindWithdrawlsByDescription(dayRecords));
+            dayRecords.clear();
         }
         log.info("Data processing is finished...");
         timer.stop();
@@ -86,6 +88,10 @@ public final class ComputingService {
                     findAvg(records)));
         });
         return outputRecords;
+    }
+
+    private boolean validationWithdrawls(Double withdrawals) {
+        return withdrawals == 0.0;
     }
 
     private static BigDecimal findMin(List<Record> records) {

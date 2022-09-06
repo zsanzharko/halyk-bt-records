@@ -1,7 +1,7 @@
 package kz.halyk;
 
 import kz.halyk.service.ComputingService;
-import kz.halyk.utils.ProfileMemory;
+import kz.halyk.profiler.ProfileMemory;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
