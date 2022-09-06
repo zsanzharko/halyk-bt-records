@@ -53,8 +53,8 @@ public class ProfileMemory implements Runnable {
             return;
         }
         log.info("Information about JVM Memory");
-        Long maxMemory= memoryStatPerSec.stream().mapToLong(v -> v).max().orElse(-1);
-        Long medianMemory = memoryStatPerSec.stream().reduce(0L , Long::sum) / memoryStatPerSec.size();
+        Long maxMemory = memoryStatPerSec.stream().mapToLong(v -> v).max().orElse(-1);
+        Long medianMemory = memoryStatPerSec.stream().reduce(0L, Long::sum) / memoryStatPerSec.size();
         log.info(String.format("Max: %s MB\tMedian: %s MB", maxMemory, medianMemory));
         generateStatisticInConsole();
     }
@@ -64,14 +64,15 @@ public class ProfileMemory implements Runnable {
 
         StringBuilder verticalResult = new StringBuilder(PROFILE_CONSOLE_COLOR);
 
-        AtomicInteger counter = new AtomicInteger(1);
+        AtomicInteger counter = new AtomicInteger(0);
         memoryStatPerSec.forEach(memory -> {
             int memoryLengthShowConsole = memory.intValue() / 10;
             verticalResult
-                    .append(String.valueOf(memoryLengthShowConsole == 0 ? '<' : '>').repeat(memoryLengthShowConsole == 0 ? 1 : memoryLengthShowConsole))
+                    .append(String.valueOf(memoryLengthShowConsole == 0 ? '<' : '>')
+                            .repeat(memoryLengthShowConsole == 0 ? 1 : memoryLengthShowConsole))
                     .append(" ").append(memory)
-                    .append(" ".repeat((maxValue - memoryLengthShowConsole)))
-                    .append(counter.getAndIncrement()).append("sec").append("\n");
+                    .append(" ".repeat(((countDig(memory.intValue()) + maxValue) - memoryLengthShowConsole)))
+                    .append(counter.getAndIncrement()).append(" sec").append("\n");
         });
         System.out.println(verticalResult);
     }
@@ -80,4 +81,14 @@ public class ProfileMemory implements Runnable {
         final Runtime runtime = Runtime.getRuntime();
         memoryStatPerSec.add((runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024));
     }
+
+    public int countDig(int n) {
+        int count = 0;
+        while (n != 0) {
+            n = n / 10;
+            count = count + 1;
+        }
+        return count;
+    }
+
 }

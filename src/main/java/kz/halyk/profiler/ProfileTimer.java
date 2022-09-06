@@ -54,7 +54,7 @@ public class ProfileTimer {
             long total = endTimes.get(i) - startTimes.get(i);
             long minutes = TimeUnit.MILLISECONDS.toMinutes(total);
             long seconds = (TimeUnit.MILLISECONDS.toSeconds(total) % 60);
-            log.info(marker, String.format("%d. %d min %d sec", (i + 1), minutes, seconds));
+            log.info(marker, String.format("%d. %d min %d sec", (i), minutes, seconds));
         }
     }
 }
